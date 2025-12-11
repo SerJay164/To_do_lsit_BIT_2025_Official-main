@@ -225,6 +225,12 @@ def save_tasks_to_file(tasks, filename):
 # ---------------------------
 # Task list helpers
 # ---------------------------
+def parse_date(date_str):
+    if date_str == "no date":
+        return (9999, 12, 31)  # ganz ans Ende
+    day, month, year = date_str.split("-")
+    return (int(year), int(month), int(day))
+
 
 def sort_tasks_by_due_date(tasks):
     """
@@ -236,25 +242,17 @@ def sort_tasks_by_due_date(tasks):
     n = len(tasks)
     for i in range(n - 1):
         for j in range(0, n - 1 - i):
+
             date1 = tasks[j][1]
             date2 = tasks[j + 1][1]
 
-            # Treat "no date" as very large date so it goes to the end
-            if date1 == "no date":
-                key1 = "%d-%m-%Y"
-            else:
-                key1 = date1
-
-            if date2 == "no date":
-                key2 = "%d-%m-%Y"
-            else:
-                key2 = date2
+            # Always convert dates to comparable tuples
+            key1 = parse_date(date1)
+            key2 = parse_date(date2)
 
             if key1 > key2:
-                # Swap tasks[j] and tasks[j+1]
-                temp = tasks[j]
-                tasks[j] = tasks[j + 1]
-                tasks[j + 1] = temp
+                # swap
+                tasks[j], tasks[j + 1] = tasks[j + 1], tasks[j]
 
 
 def print_single_task(task, index):
@@ -584,7 +582,7 @@ def main():
             save_tasks_to_file(tasks, filename)
             break
         else:
-            print("Invalid choice. Please enter a number from 1 to 6.")
+            print("Invalid choice. Please enter a number from 1 to 7.")
 
 
 # Start the program
