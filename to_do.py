@@ -225,9 +225,10 @@ def save_tasks_to_file(tasks, filename):
 # ---------------------------
 # Task list helpers
 # ---------------------------
+
 def parse_date(date_str):
     if date_str == "no date":
-        return (9999, 12, 31)  # ganz ans Ende
+        return (9999, 12, 31)  # to the end of sorting
     day, month, year = date_str.split("-")
     return (int(year), int(month), int(day))
 
