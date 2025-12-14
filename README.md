@@ -96,7 +96,7 @@ How to run
 ## Team & Contributions
 Justin Vogler - creating main Code and functions, testing
 Seraphin Schobin - improving UX, completing Code
-Jermey Heer - creating data vailidation, testing
+Jeremy Heer - creating data validation, testing
 
 ## Contributing
 Use this repo as a template for coursework. Work in your
