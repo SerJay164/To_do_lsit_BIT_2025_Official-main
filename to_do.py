@@ -197,28 +197,9 @@ def load_tasks_from_file(filename):
                 parts = line.split("|")
                 if len(parts) == 4:
                     title = parts[0]
-                    due_date = parts[1].strip()
-                    priority = parts[2].strip().lower()
-                    status = parts[3].strip().lower()
-
-                    if due_date == "" or due_date.lower() == "no date":
-                        due_date = "no date"
-                    else:
-                        try:
-                            datetime.strptime(due_date, "%d-%m-%Y")
-                        except ValueError:
-                            due_date = "no date"
-
-                    if priority in PRIORITY_MAP:
-                        priority = PRIORITY_MAP[priority]
-                    else:
-                        priority = "low"
-
-                    if status in STATUS_MAP:
-                        status = STATUS_MAP[status]
-                    else:
-                        status = "pending"
-
+                    due_date = parts[1]
+                    priority = parts[2]
+                    status = parts[3]
                     tasks.append([title, due_date, priority, status])
                 else:
                     # If the line does not have exactly 4 parts, we ignore it
@@ -240,8 +221,6 @@ def save_tasks_to_file(tasks, filename):
     try:
         with open(filename, "w") as f:
             for task in tasks:
-                if len(task) != 4:
-                    continue
                 title = task[0]
                 due_date = task[1]
                 priority = task[2]
@@ -260,11 +239,8 @@ def parse_date(date_str):
     """Convert a date string (DD-MM-YYYY) into a tuple for sorting."""
     if date_str == "no date":
         return (9999, 12, 31)  # to the end of sorting
-    try:
-        d = datetime.strptime(date_str, "%d-%m-%Y")
-        return (d.year, d.month, d.day)
-    except ValueError:
-        return (9999, 12, 31)
+    day, month, year = date_str.split("-")
+    return (int(year), int(month), int(day))
 
 
 def sort_tasks_by_due_date(tasks):
@@ -326,10 +302,10 @@ def view_tasks_by_status(tasks):
 
     print(f"\n--- TASKS WITH STATUS: {wanted_status} ---")
     count = 0
-    for i, task in enumerate(tasks, start=1):
+    for task in tasks:
         if task[3] == wanted_status:
             count += 1
-            print_single_task(task, i)
+            print_single_task(task, count)
 
     if count == 0:
         print("No tasks with status:", wanted_status)
@@ -586,7 +562,6 @@ def main():
             mark_task_complete(tasks, filename)
         elif choice == "5":
             edit_task(tasks)
-            save_tasks_to_file(tasks, filename)
         elif choice == "6":
             delete_task(tasks, filename)
         elif choice == "7":
