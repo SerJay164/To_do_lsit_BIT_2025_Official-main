@@ -1,3 +1,32 @@
+# ---------------------------
+# imports
+# ---------------------------
+
+import os
+from datetime import datetime
+
+try:
+    import tkinter as tk
+    from tkinter import filedialog
+except Exception:
+    tk = None
+    filedialog = None
+
+
+# ---------------------------
+# shared maps
+# ---------------------------    
+
+PRIORITY_MAP = {
+    "1": "low", "2": "medium", "3": "high",
+    "low": "low", "medium": "medium", "high": "high",
+}
+
+
+STATUS_MAP = {
+    "1": "pending", "2": "done",
+    "pending": "pending", "done": "done",
+}
 
 # ---------------------------
 # Helper functions for input
@@ -10,7 +39,6 @@ def get_non_empty_title():
         if title == "":
             print("Title cannot be empty. Please try again.")
         elif "|" in title:
-            # The '|' character is used as a separator in the file
             print("Please do not use the '|' character in the title.")
         else:
             return title
@@ -22,8 +50,6 @@ def get_valid_date():
     The function checks if it is a real date, %d = 0-31, %m = 1-12, %Y = year in 4 digits.
     The user can leave it empty to skip the date.
     """
-    from datetime import datetime
-
     while True:
         date_str = input("Enter due date (DD-MM-YYYY, or press Enter for no date): ").strip()
 
@@ -39,43 +65,27 @@ def get_valid_date():
             return date_str    
 
        
-       
 def get_valid_priority():
     """
     Ask the user for a priority and only accept: 1=low, 2=medium, 3=high.
     """
-    priority_map = {
-        "1" : "low",
-        "2" : "medium",
-        "3" : "high",
-        "low" : "low",
-        "medium" : "medium",
-        "high" : "high"
-    }
-
     while True:
         choice = input("Priority (1=low, 2=medium, 3=high): ").strip().lower()
-        if choice in priority_map:
-            priority = priority_map[choice]
-            return priority
+        if choice in PRIORITY_MAP:
+            return PRIORITY_MAP[choice]
         else:
             print("Please enter 1, 2, 3 or low, medium, high.")
 
 
 def get_valid_status():
-    """Ask the user which status they want to view: pending or done."""
-    choice_map = {
-        "1": "pending",
-        "2": "done",
-        "pending": "pending",
-        "done": "done"
-    }
+    """
+    Ask the user which status they want to view: pending or done.
+    """
         
     while True:
         status = input("Show tasks with status (1=pending, 2=done): ").strip().lower()
-        if status in choice_map:
-            status = choice_map[status]
-            return status
+        if status in STATUS_MAP:
+            return STATUS_MAP[status]
         else:
             print("Please enter 1, 2, pending or done.")
 
@@ -101,7 +111,6 @@ def get_valid_task_index(tasks, action_text):
         except ValueError:
             print("Please enter a valid integer.")
 
-import os
 
 def choose_task_file():
     """
@@ -116,11 +125,10 @@ def choose_task_file():
         choice = input("Choose an option (1-2): ").strip()
 
         if choice == "1":
-            # Use a file dialog (explorer) to pick a .txt file
+            if tk is None or filedialog is None:
+                print("File dialog is not available on this system.")
+                continue
             try:
-                import tkinter as tk
-                from tkinter import filedialog
-
                 root = tk.Tk()
                 root.withdraw()  # Hide the main Tk window
 
@@ -129,24 +137,27 @@ def choose_task_file():
                     title="Select task file",
                     filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
                 )
+
                 root.destroy()
 
-                if filename == "":
-                    print("No file selected. Please try again.")
-                    continue
-
-                return filename
             except Exception as e:
                 print("Could not open file dialog:", e)
                 print("You can still type a filename manually (option 2).")
+                continue
+        
+            if filename == "":
+                print("No file selected. Please try again.")
+                continue
 
+            return filename
+            
         elif choice == "2":
             filename = input("Enter a file name: ").strip()
             if filename == "":
                 print("Filename cannot be empty.")
                 continue
 
-            # Make sure it ends with .txt (optional)
+            # File will be automatically saved as .txt
             if not filename.lower().endswith(".txt"):
                 filename += ".txt"
 
@@ -158,8 +169,6 @@ def choose_task_file():
                 else:
                     continue
             else:
-                # File does not exist yet; we just use the name,
-                # it will be created when saving.
                 print(f"New file will be created: {filename}")
                 return filename
 
@@ -227,6 +236,7 @@ def save_tasks_to_file(tasks, filename):
 # ---------------------------
 
 def parse_date(date_str):
+    """Convert a date string (DD-MM-YYYY) into a tuple for sorting."""
     if date_str == "no date":
         return (9999, 12, 31)  # to the end of sorting
     day, month, year = date_str.split("-")
@@ -236,8 +246,6 @@ def parse_date(date_str):
 def sort_tasks_by_due_date(tasks):
     """
     Sort the tasks list IN PLACE by due_date using a simple bubble sort
-    (only basic loops and if, no advanced features).
-
     Tasks with 'no date' are moved to the end.
     """
     n = len(tasks)
@@ -247,28 +255,22 @@ def sort_tasks_by_due_date(tasks):
             date1 = tasks[j][1]
             date2 = tasks[j + 1][1]
 
-            # Always convert dates to comparable tuples
             key1 = parse_date(date1)
             key2 = parse_date(date2)
 
             if key1 > key2:
-                # swap
                 tasks[j], tasks[j + 1] = tasks[j + 1], tasks[j]
 
 
 def print_single_task(task, index):
     """
     Print one task in a nice format.
-
-    Example:
-    1. [pending] (high) 20-12-2025 - Buy groceries
     """
     title = task[0]
     due_date = task[1]
     priority = task[2]
     status = task[3]
 
-    # Show "no date" in a more friendly way
     if due_date == "no date":
         due_text = "no due date"
     else:
@@ -283,13 +285,11 @@ def view_all_tasks(tasks):
         print("No tasks found.")
         return
 
-    # Sort before displaying
     sort_tasks_by_due_date(tasks)
 
     print("\n--- ALL TASKS ---")
-    for i in range(len(tasks)):
-        print_single_task(tasks[i], i + 1)
-
+    for i, task in enumerate(tasks, start=1):
+        print_single_task(task, i)
 
 
 def view_tasks_by_status(tasks):
@@ -302,10 +302,10 @@ def view_tasks_by_status(tasks):
 
     print(f"\n--- TASKS WITH STATUS: {wanted_status} ---")
     count = 0
-    for i in range(len(tasks)):
-        if tasks[i][3] == wanted_status:
-            print_single_task(tasks[i], i + 1)
+    for task in tasks:
+        if task[3] == wanted_status:
             count += 1
+            print_single_task(task, count)
 
     if count == 0:
         print("No tasks with status:", wanted_status)
@@ -317,20 +317,19 @@ def add_task(tasks):
     title = get_non_empty_title()
     due_date = get_valid_date()
     priority = get_valid_priority()
-    status = "pending"  # new tasks start as pending
+    status = "pending"  
 
     tasks.append([title, due_date, priority, status])
     print("Task added successfully.")
 
 
-def mark_task_complete(tasks):
+def mark_task_complete(tasks, filename):
     """Mark a selected task as done."""
     if len(tasks) == 0:
         print("No tasks to mark as complete.")
         return
 
     print("\n--- MARK TASK AS COMPLETE ---")
-    # Show all tasks with numbers
     view_all_tasks(tasks)
 
     index = get_valid_task_index(tasks, "mark as complete")
@@ -342,9 +341,12 @@ def mark_task_complete(tasks):
     else:
         tasks[index][3] = "done"
         print("Task marked as complete.")
+        save_tasks_to_file(tasks, filename)  # save after change
+        print("\nUpdated task list:")
+        view_all_tasks(tasks)
 
 
-def delete_task(tasks):
+def delete_task(tasks, filename):
     """Delete a selected task from the list."""
     if len(tasks) == 0:
         print("No tasks to delete.")
@@ -357,15 +359,16 @@ def delete_task(tasks):
     if index is None:
         return
 
-    # Show the task that will be deleted
     print("You are about to delete this task:")
     print_single_task(tasks[index], index + 1)
 
     confirm = input("Are you sure? (y/n): ").strip().lower()
     if confirm == "y":
-        # Remove the task from the list
         tasks.pop(index)
         print("Task deleted.")
+        save_tasks_to_file(tasks, filename)  # save after change
+        print("\nUpdated task list:")
+        view_all_tasks(tasks)
     else:
         print("Delete cancelled.")
 
@@ -393,37 +396,41 @@ def short_cut_menu(tasks, filename):
             index = get_valid_task_index(tasks, "mark as complete")
             if index is None:
                 print("No tasks available.")
-                continue  # ask again
+                continue  
 
             if tasks[index][3] == "done":
                 print("This task is already marked as done.")
-                continue  # ask again
+                continue  
 
             # If we get here, the task is NOT done → mark it complete
             tasks[index][3] = "done"
             print("Task marked as complete.")
-            save_tasks_to_file(tasks, filename)  # save after change 
+            save_tasks_to_file(tasks, filename)  # save after change
             print("\nUpdated task list:")
             view_all_tasks(tasks)
 
-            continue    # Back to the shortcut menu
+            continue    
 
         elif short_cut == "2":
-           index = get_valid_task_index(tasks, "delete")
-           if index is not None:
-                print("You are about to delete this task:")
-                print_single_task(tasks[index], index + 1)  
-                
-                confirm = input("Are you sure? (y/n): ").strip().lower()
-                if confirm == "y":
-                    tasks.pop(index)
-                    print("Task deleted.")
-                    save_tasks_to_file(tasks, filename) # save after change 
-                    print("\nUpdated task list:")
-                    view_all_tasks(tasks)   
-                else:
-                    print("Delete cancelled.")
-                continue    # Back to the shortcut menu
+            index = get_valid_task_index(tasks, "delete")
+            if index is None:
+                print("No tasks available.")
+                continue  
+
+            print("You are about to delete this task:")
+            print_single_task(tasks[index], index + 1)
+
+            confirm = input("Are you sure? (y/n): ").strip().lower()
+            if confirm == "y":
+                tasks.pop(index)
+                print("Task deleted.")
+                save_tasks_to_file(tasks, filename)  # save after change
+                print("\nUpdated task list:")
+                view_all_tasks(tasks)
+            else:
+                print("Delete cancelled.")
+
+            continue  
         
         elif short_cut == "3":
             return  # Go back to the view / main
@@ -451,7 +458,7 @@ def edit_task(tasks):
 
     # --- Edit title ---
     while True:
-        new_title = input(f"New title (current: {task[0]}): ").strip()
+        new_title = input(f"New title (current: {task[0]}), Enter = keep: ").strip()
         if new_title == "":
             break  # keep old title
         elif "|" in new_title:
@@ -461,7 +468,6 @@ def edit_task(tasks):
             break
 
     # --- Edit due date ---
-    from datetime import datetime
     while True:
         current_due = "no due date" if task[1] == "no date" else task[1]
         new_date = input(
@@ -482,15 +488,7 @@ def edit_task(tasks):
             print("Invalid date. Please use DD-MM-YYYY, e.g. 31-12-2025.")
 
     # --- Edit priority ---
-    priority_map = {
-        "1": "low",
-        "2": "medium",
-        "3": "high",
-        "low": "low",
-        "medium": "medium",
-        "high": "high"
-    }
-
+    
     while True:
         new_prio = input(
             f"New priority (1=low, 2=medium, 3=high, current: {task[2]}, Enter = keep): "
@@ -498,30 +496,23 @@ def edit_task(tasks):
 
         if new_prio == "":
             break  # keep old
-        if new_prio in priority_map:
-            task[2] = priority_map[new_prio]
+        if new_prio in PRIORITY_MAP:
+            task[2] = PRIORITY_MAP[new_prio]
             break
         else:
             print("Please enter 1, 2, 3 or low/medium/high.")
 
     # --- Edit status ---
-    choice_map = {
-        "1": "pending",
-        "2": "done",
-        "pending": "pending",
-        "done": "done"
-    }
-
-
+   
     while True:
         new_status = input(
             f"New status (1=pending, 2=done, current: {task[3]}, Enter = keep): "
         ).strip().lower()
 
         if new_status == "":
-            break  # keep
-        if new_status in choice_map:
-            task[3] = choice_map[new_status]
+            break  # keep status
+        if new_status in STATUS_MAP:
+            task[3] = STATUS_MAP[new_status]
             break
         else:
             print("Please enter 1, 2, pending or done.")
@@ -554,29 +545,25 @@ def main():
 
     print("Welcome to the To-Do List Manager!")
 
-    # Main loop
     while True:
         show_menu()
         choice = input("Choose an option (1-7): ").strip()
 
         if choice == "1":
             add_task(tasks)
-            save_tasks_to_file(tasks, filename)  # save after change
+            save_tasks_to_file(tasks, filename)  
         elif choice == "2":
             view_all_tasks(tasks)
-            short_cut_menu(tasks, filename)  # provide shortcuts after viewing
+            short_cut_menu(tasks, filename)  
         elif choice == "3":
             view_tasks_by_status(tasks)
-            short_cut_menu(tasks, filename)  # provide shortcuts after viewing
+            short_cut_menu(tasks, filename)  
         elif choice == "4":
-            mark_task_complete(tasks)
-            save_tasks_to_file(tasks, filename)  # save after change
+            mark_task_complete(tasks, filename)
         elif choice == "5":
             edit_task(tasks)
-            save_tasks_to_file(tasks, filename)  # save after change        
         elif choice == "6":
-            delete_task(tasks)
-            save_tasks_to_file(tasks, filename)  # save after change
+            delete_task(tasks, filename)
         elif choice == "7":
             print("Goodbye!")
             # Save once more before exiting (optional, but safe)
@@ -586,5 +573,5 @@ def main():
             print("Invalid choice. Please enter a number from 1 to 7.")
 
 
-# Start the program
-main()
+if __name__ == "__main__":
+    main()
